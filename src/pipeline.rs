@@ -124,6 +124,10 @@ pub struct LdtkTilemapTilesetInfo {
     pub height: u32,
     /// The number of pixels wide ( and tall ) a tile in the tileset grid is
     pub grid_size: u32,
+    /// Padding around tiles on the tileset texture
+    pub padding: u32,
+    /// Space between tiles in pixels
+    pub spacing: u32,
 }
 unsafe impl Byteable for LdtkTilemapTilesetInfo {}
 

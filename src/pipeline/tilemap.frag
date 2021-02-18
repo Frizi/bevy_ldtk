@@ -35,6 +35,8 @@ layout(set = 2, binding = 2) uniform LdtkTilemapLayer_tileset_info {
     uint tileset_width_tiles;
     uint tileset_height_tiles;
     uint tileset_grid_size;
+    uint tileset_grid_padding;
+    uint tileset_grid_spacing;
 };
 // These texture uniforms are automatically added by Bevy to represent the `Handle<Texture>` that
 // was in our corresponding Rust struct.
@@ -81,13 +83,21 @@ void main() {
         // And the tileset tile x value 
         uint tileset_tile_x = tileset_tile_idx - tileset_tile_y * tileset_width_tiles;
         // And combine that to our tileset tile vector
-        vec2 tileset_tile = vec2(tileset_tile_x, tileset_tile_y);
+        uvec2 tileset_tile = uvec2(tileset_tile_x, tileset_tile_y);
 
         // Next calculate the size of a map tile, as a fraction of the total size of the mesh,
         // which is betwen 0 and 1.
-        vec2 map_tile_size = vec2(1 / map_width_tiles, 1 / map_height_tiles);
-        // And calculate the size of a tileset tile as a fraction of its texture size
-        vec2 tileset_tile_size = vec2(1 / float(tileset_width_tiles), 1 / float(tileset_height_tiles));
+
+        // calculate the texture size from tile properties
+        uint total_tile_size_pixels = tileset_grid_size + tileset_grid_spacing;
+        vec2 tileset_total_pixels = vec2(
+            tileset_grid_size * tileset_width_tiles + tileset_grid_spacing * (tileset_width_tiles - 1) + tileset_grid_padding * 2.0,
+            tileset_grid_size * tileset_height_tiles + tileset_grid_spacing * (tileset_height_tiles - 1) + tileset_grid_padding * 2.0
+        );
+        // Then calculate the size and padding of a tileset tile as a fraction of its texture size
+        vec2 tileset_tile_size = vec2(tileset_grid_size) / tileset_total_pixels;
+        vec2 tileset_tile_spacing = vec2(total_tile_size_pixels) / tileset_total_pixels;
+        vec2 tileset_tile_padding = vec2(tileset_grid_padding) / tileset_total_pixels;
 
         // Flip the x UV of the whole tileset so that it lines up with our left-to-right interpretation
         // of the tilesheet indexes
@@ -107,6 +117,7 @@ void main() {
             tile_uv.y = 1 - tile_uv.y;
         }
 
+
         // Take the tile UV and convert it to a pixelated tile UV, that samples the same single
         // coordinate from the tileset for the whole pixel in the map. In other words, grab the
         // center of the pixel in our tileset to get the color. This helps prevent bleeding colors
@@ -123,7 +134,7 @@ void main() {
             // The UV coordinate calculated here is the location from the tileset that we take our
             // pixels. We calculate it by offsetting the UV according to the location of the tile in
             // the tileset, and then adding the tile UV scaled to the size of a tilemap tile.
-            tileset_tile * tileset_tile_size + pixel_tile_uv * tileset_tile_size
+            tileset_tile_padding + tileset_tile * tileset_tile_spacing + pixel_tile_uv * tileset_tile_size
         );
 
     // If this is an empty tile, just make it transparent

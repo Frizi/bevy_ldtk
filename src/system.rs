@@ -77,7 +77,6 @@ fn process_ldtk_maps(
         // Get the map asset, if available
         if let Some(map) = map_assets.get(map_handle) {
             let project = &map.project;
-            let grid_size = map.project.default_grid_size;
 
             // Create a hasmap mapping tileset def uid's to the tileset definition and it's texture handle
             let mut tilesets = HashMap::default();
@@ -88,10 +87,8 @@ fn process_ldtk_maps(
                 let tileset_info = project
                     .defs
                     .iter()
-                    .map(|x| &x.tilesets)
-                    .flatten()
-                    .filter(|x| &x.identifier == tileset_name)
-                    .next()
+                    .flat_map(|x| &x.tilesets)
+                    .find(|x| &x.identifier == tileset_name)
                     .expect("Could not find tilset inside of map data");
 
                 // Insert it into the tileset map
@@ -148,14 +145,30 @@ fn process_ldtk_maps(
                 // target coordinates from the LDtk project.
                 let mut tiles_map = HashMap::<(u32, u32), LdtkTilemapTileInfo>::default();
 
+                let grid_size = tileset_info.tile_grid_size;
+                let grid_spacing = tileset_info.spacing;
+                let tile_total_size = grid_size + grid_spacing;
+                let total_padding = tileset_info.padding * 2;
+
                 // The width of the tileset in tiles
-                let tileset_width_tiles = (tileset_info.px_wid / grid_size) as u32;
+                let tileset_width_tiles =
+                    ((tileset_info.px_wid + grid_spacing - total_padding) / tile_total_size) as u32;
+                // The height of the tileset in tiles
+                let tileset_height_tiles =
+                    ((tileset_info.px_hei + grid_spacing - total_padding) / tile_total_size) as u32;
+
+                // The width of the level in tiles
+                let level_width_tiles = (level.px_wid / grid_size) as u32;
+                // The height of the level in tiles
+                let level_height_tiles = (level.px_hei / grid_size) as u32;
 
                 // For every tile in the layer
                 for tile in tiles {
                     // Get the x and y position of the tile in the map
-                    let tileset_tile_x = (tile.src[0] / grid_size) as u32;
-                    let tileset_tile_y = (tile.src[1] / grid_size) as u32;
+                    let tileset_tile_x =
+                        ((tile.src[0] + grid_spacing - total_padding) / tile_total_size) as u32;
+                    let tileset_tile_y =
+                        ((tile.src[1] + grid_spacing - total_padding) / tile_total_size) as u32;
                     // Add the tile and it's info to the (x, y) position in our tiles HashMap, and
                     // overwrite whatever tile was already there, if any.
                     // TODO: Handle automapping tiles that put multiple tiles in the same square
@@ -187,17 +200,19 @@ fn process_ldtk_maps(
 
                 // Initialize our map info
                 let map_info = LdtkTilemapMapInfo {
-                    height: (level.px_hei / map.project.default_grid_size) as u32,
-                    width: (level.px_wid / map.project.default_grid_size) as u32,
+                    height: level_height_tiles as u32,
+                    width: level_width_tiles as u32,
                     layer_index: z as u32,
                     center_map: if config.center_map { 1 } else { 0 },
                 };
 
                 // Initialize our tileset info
                 let tileset_info = LdtkTilemapTilesetInfo {
-                    height: (tileset_info.px_hei / map.project.default_grid_size) as u32,
-                    width: (tileset_info.px_wid / map.project.default_grid_size) as u32,
-                    grid_size: map.project.default_grid_size as u32,
+                    height: tileset_height_tiles as u32,
+                    width: tileset_width_tiles as u32,
+                    grid_size: grid_size as u32,
+                    spacing: tileset_info.spacing as u32,
+                    padding: tileset_info.padding as u32,
                 };
 
                 // Spawn the layer into the world

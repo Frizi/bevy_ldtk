@@ -98,7 +98,6 @@ The plugin is in relatively early stages, but it is still rather functional for 
 
 - Many features are not supported yet:
   - multiple overlapping autotile tiles
-  - tilemaps with spacing in them
   - levels in separate files
 - Occasionally some slight rendering artifacts between tiles. Not sure what causes those yet.
 

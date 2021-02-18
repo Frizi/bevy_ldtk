@@ -39,6 +39,8 @@ layout(set = 2, binding = 2) uniform LdtkTilemapLayer_tileset_info {
     uint tileset_width_tiles;
     uint tileset_height_tiles;
     uint tileset_grid_size;
+    uint tileset_grid_padding;
+    uint tileset_grid_spacing;
 };
 // These texture uniforms are automatically added by Bevy to represent the `Handle<Texture>` that
 // was in our corresponding Rust struct.
